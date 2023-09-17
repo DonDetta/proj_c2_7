@@ -1,0 +1,29 @@
+groups:
+  - name: my_alerts
+    rules:
+      - alert: SiteStatusChanged
+        expr: changes(http_2xx_check{job="blackbox", instance="https://lms.skillfactory.ru"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Site status code changed for lms.skillfactory.ru"
+          description: "The HTTP status code for the site lms.skillfactory.ru changed within the last 5 minutes."
+      
+      - alert: SiteLatencyTooHigh
+        expr: http_duration_seconds{job="blackbox", instance="https://lms.skillfactory.ru"} > 5
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Latency too high for lms.skillfactory.ru"
+          description: "The latency for lms.skillfactory.ru exceeded 5 seconds for the last minute."
+   
+      - alert: ServerRebooted
+        expr: changes(server_rebooted[1m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Server has rebooted"
+          description: "The server has rebooted in the last minute."

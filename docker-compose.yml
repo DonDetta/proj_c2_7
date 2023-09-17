@@ -1,0 +1,67 @@
+version: '3'
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus:/home/admin/docker/prometheus
+    command:
+      - --config.file=/home/admin/docker/prometheus/prometheus.yml
+    ports:
+      - '9090:9090'
+    restart: always
+    networks:
+      - prometheus_network
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - '3000:3000'
+    networks:
+      - prometheus_network
+    volumes:
+      - /home/admin/docker/grafana:/home/admin/docker/grafana
+      - /home/admin/docker/grafana/provisioning/:/home/admin/docker/grafana/provisioning/
+    restart: always
+  node-exporter:
+    image: prom/node-exporter
+    volumes:
+        - /proc:/host/proc:ro
+        - /sys:/host/sys:ro
+        - /:/rootfs:ro
+    hostname: monitoring
+    networks:
+        - prometheus_network
+    command:
+        - --path.procfs=/host/proc
+        - --path.sysfs=/host/sys
+        - --collector.filesystem.ignored-mount-points
+        - ^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)
+    ports:
+        - 127.0.0.1:9100:9100
+    restart: always
+  blackbox-exporter:
+    image: prom/blackbox-exporter
+    ports:
+        - 127.0.0.1:9115:9115
+    restart: always
+    hostname: monitoring
+    volumes:
+        - /home/admin/docker:/home/admin/docker/
+    command: --config.file=/home/admin/docker/blackbox.yml
+    networks:
+        - prometheus_network
+  alertmanager:
+    image: prom/alertmanager
+    volumes:
+      - /home/admin/docker/alertmanager:/etc/alertmanager
+    ports:
+      - 127.0.0.1:9093:9093
+    networks:
+      - prometheus_network
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+      - '--storage.path=/etc/alertmanager/data'
+
+networks:
+  prometheus_network:
+    driver: bridge
